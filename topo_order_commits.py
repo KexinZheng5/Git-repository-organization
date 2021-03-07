@@ -15,6 +15,8 @@ def topo_order_commits():
         cwd = new
     print(cwd)
 
+    # Get the list of local branch names
+
 
 #Get git directory (can be helper function) #Get list of local branch names (can be helper function) #Build the commit graph (can be helper function) #Topologically sort the commit graph (can be helper fnction) #Print the sorted order (can be helper function)
 

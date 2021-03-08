@@ -109,7 +109,37 @@ def build_graph(dir, branches):
     
     return nodes
 
+# sort in topological order
+def topological_sort(nodes): 
+    result = []
+    no_children = deque()
+    copy_graph = copy.deepcopy(nodes) 
 
+    # add commit to no_children if it doesn't have children
+    for commit_hash in copy_graph: 
+        if len(copy_graph[commit_hash].children) == 0: 
+            no_children.append(commit_hash)
+
+    while len(no_children) > 0:
+        commit_hash = no_children.popleft() 
+        result.append(commit_hash)
+
+        # process parents
+        for parent_hash in list(copy_graph[commit_hash].parents): 
+            # remove edge
+            copy_graph[commit_hash].parents.remove(parent_hash)
+            copy_graph[parent_hash].children.remove(commit_hash)
+            # add to list of parent now have no children
+            if len(copy_graph[parent_hash].children) == 0:
+                no_children.append(parent_hash)
+                print(parent_hash)
+
+    # check for left over
+    if len(result) < len(nodes): 
+        raise Exception("cycle detected")
+    return result
+
+# topo_order_commits
 def topo_order_commits():
     # 1. get .git directory
     git_dir = get_git_dir()
@@ -119,10 +149,15 @@ def topo_order_commits():
 
     # create graph
     nodes = build_graph(git_dir, branches)
+
+    sorted_nodes = topological_sort(nodes)
+    print(sorted_nodes)
+    """
     for value in nodes.values():
         print(value.commit_hash)
         print(value.parents)
-        print(value.children)
+        print(value.children, "\n")
+    """
 
 
 #Get git directory (can be helper function) #Get list of local branch names (can be helper function) #Build the commit graph (can be helper function) #Topologically sort the commit graph (can be helper fnction) #Print the sorted order (can be helper function)

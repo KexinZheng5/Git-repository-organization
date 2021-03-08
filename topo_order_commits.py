@@ -106,6 +106,8 @@ def build_graph(dir, branches):
             if p not in nodes: 
                 nodes[p] = CommitNode(p)
                 nodes[p].children.add(commit_hash)
+            elif commit_hash not in nodes[p].children: 
+                nodes[p].children.add(commit_hash)
     
     return nodes
 
@@ -127,17 +129,32 @@ def topological_sort(nodes):
         # process parents
         for parent_hash in list(copy_graph[commit_hash].parents): 
             # remove edge
-            copy_graph[commit_hash].parents.remove(parent_hash)
+            copy_graph[commit_hash].parents.remove(parent_hash) 
             copy_graph[parent_hash].children.remove(commit_hash)
             # add to list of parent now have no children
             if len(copy_graph[parent_hash].children) == 0:
                 no_children.append(parent_hash)
-                print(parent_hash)
 
     # check for left over
     if len(result) < len(nodes): 
         raise Exception("cycle detected")
     return result
+
+# print nodes with format
+def print_topo_ordered_commits(commit_nodes, topo_ordered_commits, head_to_branches): 
+    jumped = False 
+    for i in range(len(topo_ordered_commits)): 
+        commit_hash = topo_ordered_commits[i] 
+        if jumped: 
+            jumped = False 
+            sticky_hash = ' '.join(commit_nodes[commit_hash].children) 
+            print(f'={sticky_hash}')
+        branches = sorted(head_to_branches[commit_hash]) if commit_hash in head_to_branches else [] 
+        print(commit_hash + (' ' + ' '.join(branches) if branches else ''))
+        if i+1 < len(topo_ordered_commits) and topo_ordered_commits[i+1] not in commit_nodes[commit_hash].parents:
+            jumped = True 
+            sticky_hash = ' '.join(commit_nodes[commit_hash].parents) 
+            print(f'{sticky_hash}=\n')
 
 # topo_order_commits
 def topo_order_commits():
@@ -149,9 +166,16 @@ def topo_order_commits():
 
     # create graph
     nodes = build_graph(git_dir, branches)
-
+    
     sorted_nodes = topological_sort(nodes)
-    print(sorted_nodes)
+    #print(sorted_nodes)
+    head_to_branches = {}
+    for e in branches: 
+        head_to_branches[e[1]] = [e[0]]
+    #print(head_to_branches)
+
+    print_topo_ordered_commits(nodes, sorted_nodes, head_to_branches)
+    
     """
     for value in nodes.values():
         print(value.commit_hash)
